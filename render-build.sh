@@ -4,5 +4,6 @@ set -o errexit
 
 pip install -r requirements.txt
 
-# Ito ang importante: install chromium pati dependencies
+# Sasabihin natin sa installer na dito ilagay ang browser files
+export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.cache/ms-playwright
 python -m playwright install --with-deps chromium
