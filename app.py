@@ -8,50 +8,55 @@ from playwright.sync_api import sync_playwright
 app = Flask(__name__)
 CORS(app)
 
-# Siguraduhin na ang path ay tugma sa Environment Variable
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/opt/render/project/src/.cache/ms-playwright"
+# Dito hahanapin ng Playwright ang browser
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "pw-browsers"
 
 def super_scraper(target_url):
     results = {}
+    # Ginamit ang 'with' para automatic mag-close ang Playwright
     try:
         with sync_playwright() as pw:
-            # Gagamit tayo ng simpleng launch dahil naka-set na ang PATH
+            # Hahayaan natin si Playwright na humanap ng executable kusa
             browser = pw.chromium.launch(
                 headless=True,
-                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+                args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"]
             )
-            context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-            page = context.new_page()
+            page = browser.new_page(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            )
 
+            # Listener para sa m3u8
             def handle_response(res):
                 if ".m3u8" in res.url:
                     if "stream" not in results:
                         results["stream"] = res.url
+                        print(f"FOUND: {res.url}")
 
             page.on("response", handle_response)
             
+            # Buksan ang site
             page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
             time.sleep(12) # Antay ng traffic
             
             browser.close()
     except Exception as e:
         results["error"] = str(e)
-        results["traceback"] = traceback.format_exc()
+        results["debug"] = traceback.format_exc()
     
     return results
 
 @app.route('/')
 def home():
-    return "API is Online! Browsers are persistent.", 200
+    return "API is Online and Browser path is set!", 200
 
 @app.route('/scrape')
 def api_scrape():
     url = request.args.get('url')
     if not url:
-        return jsonify({"success": False, "error": "No URL provided"}), 400
+        return jsonify({"success": False, "error": "Missing URL"}), 400
     
     data = super_scraper(url)
-    return jsonify(data)
+    return jsonify({"success": True, "data": data})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
