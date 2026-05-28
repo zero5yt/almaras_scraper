@@ -2,8 +2,9 @@
 # exit on error
 set -o errexit
 
+# 1. I-install ang Python packages
 pip install -r requirements.txt
 
-# Sasabihin natin sa installer na dito ilagay ang browser files
-export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.cache/ms-playwright
-python -m playwright install --with-deps chromium
+# 2. I-install ang Chromium Browser specifically sa folder na 'pw-browsers'
+# Hindi na natin kailangan ang --with-deps dahil pre-installed na ang basic libs sa Render
+python -m playwright install chromium
