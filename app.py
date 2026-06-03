@@ -12,21 +12,13 @@ def super_scraper(target_url):
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch(
-    headless=True, 
-    args=[
-        "--no-sandbox", 
-        "--disable-dev-shm-usage", 
-        "--disable-gpu", 
-        "--single-process"
-    ]
-)
+                headless=True, 
+                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--single-process"]
+            )
             page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
             def handle_response(res):
-                # I-print ang lahat ng URL na dumadaan para makita mo sa logs kung ano ang nahuhuli
                 print(f"DEBUG: Catching -> {res.url}")
-                
-                # Filter para sa streaming formats
                 if ".m3u8" in res.url.lower() or ".mpd" in res.url.lower():
                     if "stream" not in results:
                         results["stream"] = res.url
@@ -34,22 +26,24 @@ def super_scraper(target_url):
 
             page.on("response", handle_response)
             
+            # DITO DAPAT ANG PAG-GOTO AT WAIT
             page.goto(target_url, wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(5000) # Ito ay 5 seconds lang, mas mabilis kaysa time.sleep
-    
-            # Subukang mag-click para ma-trigger ang player
+            page.wait_for_timeout(5000) 
+
+            # Subukang mag-click
             try:
                 page.mouse.click(500, 300)
             except:
                 pass
                 
-            time.sleep(15) 
+            time.sleep(10) # Bawasan natin para hindi mag-timeout
             browser.close()
             
     except Exception as e:
         results["error"] = str(e)
         
     return results
+
 @app.route('/scrape')
 def api_scrape():
     url = request.args.get('url')
