@@ -11,7 +11,15 @@ def super_scraper(target_url):
     results = {}
     try:
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
+            browser = pw.chromium.launch(
+    headless=True, 
+    args=[
+        "--no-sandbox", 
+        "--disable-dev-shm-usage", 
+        "--disable-gpu", 
+        "--single-process"
+    ]
+)
             page = browser.new_page(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
             def handle_response(res):
@@ -25,8 +33,10 @@ def super_scraper(target_url):
                         print(f"FOUND STREAM: {res.url}")
 
             page.on("response", handle_response)
-            page.goto(target_url, wait_until="networkidle", timeout=60000)
             
+            page.goto(target_url, wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(5000) # Ito ay 5 seconds lang, mas mabilis kaysa time.sleep
+    
             # Subukang mag-click para ma-trigger ang player
             try:
                 page.mouse.click(500, 300)
